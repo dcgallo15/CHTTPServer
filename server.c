@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
     }
     // Creating Server Socket
     struct addrinfo *result = NULL, *ptr = NULL, hints;
-    ZeroMemory(&hints, sizeof(struct addrinfo));
+    ZeroMemory(&hints, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
@@ -57,6 +57,8 @@ int main(int argc, char** argv) {
         clientSocket = accept(listener, NULL, NULL);
         if (clientSocket == INVALID_SOCKET) {
             perror("Could not accept client!\n");
+        } else {
+            printf("Connection Accepted\n");
         }
         char* res = readSocket(&clientSocket);
         printf("Request: %s\n", res);
