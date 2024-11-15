@@ -21,7 +21,6 @@ int main(int argc, char** argv) {
     hints.ai_protocol = IPPROTO_TCP;
     int getInfoRes = getaddrinfo(NULL, port, &hints, &result);
     if (getInfoRes != 0) {
-        printf("%d\n", getInfoRes);
         perror("getaddrinfo failed!\n");
         return 1;
     }
@@ -35,6 +34,7 @@ int main(int argc, char** argv) {
         printf("Connnected!\n");
     }
     // Here will get file that req gives then send that over
+    // Use FTP
     int sendRes = send(sock, req, (int)strlen(req), 0);
     if (sendRes == SOCKET_ERROR) {
         perror("Send Failed!\n");

@@ -11,6 +11,16 @@ char* readSocket(SOCKET* sock) {
     return inpBuffer;
 }
 
+int handleRequest(char* req) {
+    // Depending on the request do something
+    // Example requests
+    // HTML File - From client
+        // Response - OK
+    // GET request - From browser
+        // Responses: OK-here is webpage, 404-not found
+    return 0;
+}
+
 int main(int argc, char** argv) {
     if (argc != 2) {
         perror("Number of args inncorrect!\n");
@@ -26,7 +36,7 @@ int main(int argc, char** argv) {
         return 1;
     }
     // Creating Server Socket
-    struct addrinfo *result = NULL, *ptr = NULL, hints;
+    struct addrinfo *result = NULL, hints;
     ZeroMemory(&hints, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
@@ -60,6 +70,7 @@ int main(int argc, char** argv) {
         } else {
             printf("Connection Accepted\n");
         }
+        // TODO: use multithreading so can handle multiple requests simultaneously
         char* res = readSocket(&clientSocket);
         printf("Request: %s\n", res);
         free(res);
