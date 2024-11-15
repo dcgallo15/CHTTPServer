@@ -1,11 +1,22 @@
 #include "server.h"
 
+char* readSocket(SOCKET* sock) {
+    const int inpBufferLen = 512;
+    char* inpBuffer = malloc(inpBufferLen*sizeof(char));
+    ZeroMemory(inpBuffer, inpBufferLen);
+    int bytesRead = recv(*sock, inpBuffer, inpBufferLen, 0);
+    if (bytesRead < 0) {
+        perror("Failed to read from client!\n");
+    }
+    return inpBuffer;
+}
+
 int main(int argc, char** argv) {
-    if (argc != 1) {
+    if (argc != 2) {
         perror("Number of args inncorrect!\n");
         return 1;
     }
-    char* port = argv[0];
+    char* port = argv[1];
     // TODO: check if port is valid
     // WSA Initialisation
     WSADATA wsaData;
@@ -35,17 +46,24 @@ int main(int argc, char** argv) {
         return 1;
     }
     // Listen for connection
-    SOCKET clientSocket;
+    SOCKET clientSocket = INVALID_SOCKET;
     bool serverRunning = true;
     while (serverRunning == true) {
         if(listen(listener, SOMAXCONN) == SOCKET_ERROR) {
             perror("Error on listening for a socket!\n");
             serverRunning = false;
         }
-        // TODO: Accept client connection
+        // Accept client connection
+        clientSocket = accept(listener, NULL, NULL);
+        if (clientSocket == INVALID_SOCKET) {
+            perror("Could not accept client!\n");
+        }
+        char* res = readSocket(&clientSocket);
+        printf("Request: %s\n", res);
+        free(res);
     }
 
-
+    closesocket(clientSocket);
     closesocket(listener);
     freeaddrinfo(result);
     WSACleanup();
