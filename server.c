@@ -1,15 +1,6 @@
 #include "server.h"
 
-char* readSocket(SOCKET* sock) {
-    const int inpBufferLen = 512;
-    char* inpBuffer = malloc(inpBufferLen*sizeof(char));
-    ZeroMemory(inpBuffer, inpBufferLen);
-    int bytesRead = recv(*sock, inpBuffer, inpBufferLen, 0);
-    if (bytesRead < 0) {
-        perror("Failed to read from client!\n");
-    }
-    return inpBuffer;
-}
+HANDLE mainMutex; // To lock and unlock data
 
 int handleRequest(char* req) {
     // Depending on the request do something
@@ -19,6 +10,30 @@ int handleRequest(char* req) {
     // GET request - From browser
         // Responses: OK-here is webpage, 404-not found
     return 0;
+}
+
+DWORD WINAPI readSocket(void* socket) {
+    // Wait for the Mutex to become available
+    printf("Executing Thread\n");
+    while (WaitForSingleObject(mainMutex, INFINITE != WAIT_OBJECT_0)) {
+        printf("Waiting...\n");
+    }
+    const int inpBufferLen = 512;
+    char* inpBuffer = malloc(inpBufferLen*sizeof(char));
+    ZeroMemory(inpBuffer, inpBufferLen);
+    SOCKET* sock = (SOCKET*) socket;
+    int bytesRead = recv(*sock, inpBuffer, inpBufferLen, 0);
+    if (bytesRead < 0) {
+        perror("Failed to read from client!\n");
+        return 1;
+    }
+    int ret = handleRequest(inpBuffer);
+    printf("INPUT:\n %s\n", inpBuffer);
+    free(inpBuffer);
+    // Unlock Mutex
+    ReleaseMutex(mainMutex);
+    printf("Finished Thread Execution\n");
+    return ret;
 }
 
 int main(int argc, char** argv) {
@@ -55,6 +70,9 @@ int main(int argc, char** argv) {
         perror("Failed to bind!\n");
         return 1;
     }
+    // Threadinng setup
+    mainMutex = CreateMutex(NULL, FALSE, NULL);
+    HANDLE thread = NULL;
     // Listen for connection
     SOCKET clientSocket = INVALID_SOCKET;
     bool serverRunning = true;
@@ -67,15 +85,19 @@ int main(int argc, char** argv) {
         clientSocket = accept(listener, NULL, NULL);
         if (clientSocket == INVALID_SOCKET) {
             perror("Could not accept client!\n");
-        } else {
+        } else { // if connected
             printf("Connection Accepted\n");
         }
-        // TODO: use multithreading so can handle multiple requests simultaneously
-        char* res = readSocket(&clientSocket);
-        printf("Request: %s\n", res);
-        free(res);
+        DWORD threadRet;
+        thread = CreateThread(NULL, 0, readSocket, &clientSocket, 0, &threadRet);
+        if(thread == NULL) {
+            perror("Thread Creation Failed!\n");
+        }
+        WaitForSingleObject(thread, INFINITE);
     }
 
+    CloseHandle(thread);
+    CloseHandle(mainMutex);
     closesocket(clientSocket);
     closesocket(listener);
     freeaddrinfo(result);
