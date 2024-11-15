@@ -1,6 +1,6 @@
 # HTTP Server in C
 
-## Goals:
+## Goals
 
 - Have a client program that can send a HTML file to the server when given a path to it.\
 - Implement a server program that stores a database of HTML files and can serve them on demand.\
