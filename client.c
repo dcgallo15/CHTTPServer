@@ -7,6 +7,27 @@ int main(int argc, char** argv) {
     char* port = argv[1];
     char* req = argv[2];
     printf("Port: %s, Req: %s\n", port, req);
+    // Open file
+    // NOTE: path is relative
+    FILE* file = fopen(req, "r");
+    if (file == NULL) {
+        perror("Failed to open file!\n");
+        return 1;
+    }
+    int fileLen = 0;
+    while(getc(file) != EOF) { fileLen=fileLen+1; } // count how many characters are in the file
+    printf("%d\n", fileLen);
+    char* fileText = (char*)malloc(fileLen*sizeof(char) + 4);
+    // Instead of using FTP just specifying its a file at the start of the request so the server can handle it
+    fileText[0] = 'F';
+    fileText[1] = 'T';
+    fileText[2] = 'P';
+    fileText[3] = '\n';
+    fseek(file, 0, SEEK_SET); // resets pointer to start of file
+    ZeroMemory(fileText, fileLen + 1);
+    fread(fileText, sizeof(char), fileLen + 4, file);
+    printf("File out: \n%s\n", fileText);
+    fclose(file);
     // WSA Init
     WSADATA wsaData;
     int winSockInitRes = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -35,7 +56,7 @@ int main(int argc, char** argv) {
     }
     // Here will get file that req gives then send that over
     // Use FTP
-    int sendRes = send(sock, req, (int)strlen(req), 0);
+    int sendRes = send(sock, fileText, (int)strlen(fileText), 0);
     if (sendRes == SOCKET_ERROR) {
         perror("Send Failed!\n");
     } else {
@@ -46,6 +67,7 @@ int main(int argc, char** argv) {
     if (shutdownRes == SOCKET_ERROR) {
         perror("Error on socket shutdown!\n");
     }
+    free(fileText);
     closesocket(sock);
     freeaddrinfo(result);
     WSACleanup();
